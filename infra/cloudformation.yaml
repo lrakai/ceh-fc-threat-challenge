@@ -1,0 +1,79 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Cloud Academy FBCTF"
+
+Parameters:
+  VpcId:
+    Type: String
+    Default: "{VpcId}"
+    Description: The ID of the default VPC.
+
+  SubnetId:
+    Type: String
+    Default: "{SubnetIdA}"
+    Description: The ID of the first subnet in the default VPC
+
+  KeyName:
+    Description: The EC2 Key Pair to allow SSH access to the instances
+    Default: "{KeyName}"
+    Type: AWS::EC2::KeyPair::KeyName
+
+  EC2InstanceType:
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+      - t2.small
+    ConstraintDescription: Must be a valid EC2 instance type
+
+  EC2ImageId:
+    Type: AWS::EC2::Image::Id
+    Default: ami-03d5bd2e96d97641c
+
+Resources:
+  EC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VpcId
+
+  EC2SecurityGroupSSHIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    DependsOn: EC2SecurityGroup
+    Properties:
+      GroupId: !Ref EC2SecurityGroup
+      Description: Allow 22 inbound SSH from everywhere
+      CidrIp: "0.0.0.0/0"
+      IpProtocol: tcp
+      FromPort: 22
+      ToPort: 22      
+
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType:
+        Ref: EC2InstanceType
+      KeyName:
+        Ref: KeyName
+      ImageId:
+        Ref: EC2ImageId
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: true
+          DeviceIndex: 0
+          GroupSet:
+            - Ref: EC2SecurityGroup
+          SubnetId:
+            Ref: SubnetId
+      UserData:
+        Fn::Base64: !Sub |
+            #!/bin/bash
+      Tags:
+        - Key: Name
+          Value: 'FBCTF (username: user / password: c4nth4ckth1s)'
+
+Outputs:
+  SubnetId:
+    Description: Subnet used in the VPC
+    Value: !Join [",", [!Ref SubnetId]]
+
+  VpcId:
+    Description: The VPC Id
+    Value: !Ref VpcId
